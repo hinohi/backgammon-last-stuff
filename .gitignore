@@ -1,0 +1,17 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock
+
+# JetBrains
+.idea
+
+# Emacs
+*~
+\#*#
+.\#*
+
+# Python
+.python-version
+__pycache__
+.ipynb_checkpoints
