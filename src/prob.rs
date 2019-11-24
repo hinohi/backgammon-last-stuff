@@ -146,9 +146,9 @@ mod tests {
     #[test]
     fn mean() {
         let mut dist = ProbDist::new();
-        dist.append(BigURatio::new_from_u32(1, 1), BigURatio::new_from_u32(1, 4));
-        dist.append(BigURatio::new_from_u32(2, 1), BigURatio::new_from_u32(1, 4));
-        dist.append(BigURatio::new_from_u32(3, 1), BigURatio::new_from_u32(1, 2));
+        dist.append(1_u32, BigURatio::new_from_u32(1, 4));
+        dist.append(2, BigURatio::new_from_u32(1, 4));
+        dist.append(3, BigURatio::new_from_u32(1, 2));
         assert_eq!(dist.mean(), BigURatio::new_from_u32(9, 4));
     }
 }
