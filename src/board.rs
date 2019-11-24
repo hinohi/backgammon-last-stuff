@@ -6,7 +6,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(cell: [u8; 6]) -> Self {
+    pub const fn new(cell: [u8; 6]) -> Self {
         let c = [0, cell[0], cell[1], cell[2], cell[3], cell[4], cell[5]];
         Board { cell: c }
     }
