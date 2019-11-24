@@ -1,8 +1,18 @@
 use std::collections::HashSet;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Board {
     cell: [u8; 7],
+}
+
+impl Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "[{},{},{},{},{},{}]",
+            self.cell[1], self.cell[2], self.cell[3], self.cell[4], self.cell[5], self.cell[6],
+        ))
+    }
 }
 
 impl Board {

@@ -1,4 +1,5 @@
 use core::convert::TryFrom;
+use core::fmt::{Display, Formatter};
 use core::ops::{Add, Div, Mul, Rem, Sub};
 use core::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 
@@ -10,6 +11,12 @@ use num::{
 
 #[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
 pub struct BigURatio(Ratio<BigUint>);
+
+impl Display for BigURatio {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        (self.0).fmt(f)
+    }
+}
 
 impl FromPrimitive for BigURatio {
     #[inline]
