@@ -1,14 +1,3 @@
-use num::{bigint::BigUint, rational::Ratio, traits::FromPrimitive};
-
-type BigURatio = Ratio<BigUint>;
-
-pub fn from_u32(numer: u32, denom: u32) -> BigURatio {
-    BigURatio::new(
-        BigUint::from_u32(numer).unwrap(),
-        BigUint::from_u32(denom).unwrap(),
-    )
-}
-
 pub static DICE_DATA: &[(&[usize], u32)] = &[
     (&[1, 1, 1, 1], 1),
     (&[1, 2], 2),

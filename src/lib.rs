@@ -1,6 +1,7 @@
 mod board;
 mod prob;
-pub mod utils;
+mod ratio;
 
 pub use board::*;
 pub use prob::*;
+pub use ratio::*;

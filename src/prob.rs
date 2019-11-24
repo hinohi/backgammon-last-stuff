@@ -40,7 +40,7 @@ impl<T> ProbNum for T where
 {
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ProbDist<T, P>
 where
     T: Hash + Eq,
@@ -128,7 +128,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::from_u32;
+    use crate::ratio::BigURatio;
 
     #[test]
     fn normalize() {
@@ -146,9 +146,9 @@ mod tests {
     #[test]
     fn mean() {
         let mut dist = ProbDist::new();
-        dist.append(from_u32(1, 1), from_u32(1, 4));
-        dist.append(from_u32(2, 1), from_u32(1, 4));
-        dist.append(from_u32(3, 1), from_u32(1, 2));
-        assert_eq!(dist.mean(), from_u32(9, 4));
+        dist.append(BigURatio::new(1, 1), BigURatio::new(1, 4));
+        dist.append(BigURatio::new(2, 1), BigURatio::new(1, 4));
+        dist.append(BigURatio::new(3, 1), BigURatio::new(1, 2));
+        assert_eq!(dist.mean(), BigURatio::new(9, 4));
     }
 }
