@@ -11,6 +11,10 @@ impl Board {
         Board { cell: c }
     }
 
+    pub fn pips(&self) -> u8 {
+        self.cell[1..].iter().sum()
+    }
+
     pub fn list_moves(&self, dices: &[usize]) -> HashSet<Board> {
         let mut ret = HashSet::new();
         let mut states = vec![(self.clone(), Vec::from(dices))];

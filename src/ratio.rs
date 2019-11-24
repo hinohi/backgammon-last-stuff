@@ -206,6 +206,7 @@ impl BigURatio {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
