@@ -8,3 +8,10 @@ edition = "2018"
 
 [dependencies]
 num = "*"
+
+[dev-dependencies]
+criterion = "*"
+
+[[bench]]
+name = "board"
+harness = false
