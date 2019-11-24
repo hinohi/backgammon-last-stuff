@@ -5,7 +5,7 @@ use core::ops::{AddAssign, DivAssign, MulAssign, RemAssign, SubAssign};
 use num::{
     bigint::BigUint,
     rational::Ratio,
-    traits::{FromPrimitive, One, Zero},
+    traits::{float::FloatCore, FromPrimitive, One, Zero},
 };
 
 #[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq, Hash)]
@@ -19,31 +19,27 @@ impl FromPrimitive for BigURatio {
 
     #[inline]
     fn from_u8(n: u8) -> Option<Self> {
-        Some(BigURatio(Ratio::new(
-            BigUint::new(vec![n as u32]),
-            BigUint::new(vec![1]),
-        )))
+        Some(BigURatio(Ratio::from_integer(BigUint::new(vec![n as u32]))))
     }
 
     #[inline]
     fn from_u16(n: u16) -> Option<Self> {
-        Some(BigURatio(Ratio::new(
-            BigUint::new(vec![n as u32]),
-            BigUint::new(vec![1]),
-        )))
+        Some(BigURatio(Ratio::from_integer(BigUint::new(vec![n as u32]))))
     }
 
     #[inline]
     fn from_u32(n: u32) -> Option<Self> {
-        Some(BigURatio(Ratio::new(
-            BigUint::new(vec![n]),
-            BigUint::new(vec![1]),
-        )))
+        Some(BigURatio(Ratio::from_integer(BigUint::new(vec![n]))))
     }
 
     #[inline]
     fn from_u64(n: u64) -> Option<Self> {
-        BigUint::from_u64(n).map(|n| BigURatio(Ratio::new(n, BigUint::new(vec![1]))))
+        Some(BigURatio(Ratio::from_integer(BigUint::from(n))))
+    }
+
+    #[inline]
+    fn from_u128(n: u128) -> Option<Self> {
+        Some(BigURatio(Ratio::from_integer(BigUint::from(n))))
     }
 }
 
@@ -115,6 +111,17 @@ impl_assign_ops!(
 
 macro_rules! impl_from {
     ($($t:tt $m:ident,)*) => {$(
+        impl From<$t> for BigURatio {
+            #[inline]
+            fn from(n: $t) -> Self {
+                BigURatio::$m(n).unwrap()
+            }
+        }
+    )*};
+}
+
+macro_rules! impl_try_from {
+    ($($t:tt $m:ident,)*) => {$(
         impl TryFrom<$t> for BigURatio {
             type Error = ();
             #[inline]
@@ -126,18 +133,22 @@ macro_rules! impl_from {
 }
 
 impl_from!(
-    i8 from_i8,
-    i16 from_i16,
-    i32 from_i32,
-    i64 from_i64,
-    i128 from_i128,
     u8 from_u8,
     u16 from_u16,
     u32 from_u32,
     u64 from_u64,
     u128 from_u128,
-    isize from_isize,
     usize from_usize,
+);
+impl_try_from!(
+    i8 from_i8,
+    i16 from_i16,
+    i32 from_i32,
+    i64 from_i64,
+    i128 from_i128,
+    isize from_isize,
+    f32 from_float,
+    f64 from_float,
 );
 
 impl One for BigURatio {
@@ -160,10 +171,50 @@ impl Zero for BigURatio {
 }
 
 impl BigURatio {
-    pub fn new(numer: u32, denom: u32) -> Self {
-        BigURatio(Ratio::new(
-            BigUint::new(vec![numer]),
-            BigUint::new(vec![denom]),
-        ))
+    #[inline]
+    pub fn new_from_u32(numer: u32, denom: u32) -> Self {
+        Self::new(BigUint::new(vec![numer]), BigUint::new(vec![denom]))
+    }
+
+    #[inline]
+    pub fn new(numer: BigUint, denom: BigUint) -> Self {
+        BigURatio(Ratio::new(numer, denom))
+    }
+
+    #[inline]
+    pub fn from_integer(numer: BigUint) -> Self {
+        Self::new(numer, One::one())
+    }
+
+    pub fn from_float<T: FloatCore>(f: T) -> Option<Self> {
+        if !f.is_finite() {
+            return None;
+        }
+        let (mantissa, exponent, sign) = f.integer_decode();
+        if sign == -1 {
+            return None;
+        }
+        if exponent < 0 {
+            let one: BigUint = One::one();
+            let denom: BigUint = one << ((-exponent) as usize);
+            let numer: BigUint = FromPrimitive::from_u64(mantissa).unwrap();
+            Some(BigURatio(Ratio::new(numer, denom)))
+        } else {
+            let mut numer: BigUint = FromPrimitive::from_u64(mantissa).unwrap();
+            numer <<= exponent as usize;
+            Some(BigURatio(Ratio::from_integer(numer)))
+        }
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_float() {
+        assert_eq!(
+            BigURatio::from_float(0.25),
+            Some(BigURatio::new_from_u32(1, 4))
+        );
     }
 }
