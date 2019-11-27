@@ -1,19 +1,20 @@
 use std::collections::HashMap;
+use std::env::args;
 
 use num::traits::{One, Zero};
 
 use backgammon_last_stuff::{utils::DICE_DATA, BigURatio, Board, ProbDist};
+use std::io::BufRead;
 
-type Prob = ProbDist<BigURatio, BigURatio>;
-type DB = HashMap<Board, Prob>;
+type DB = HashMap<Board, BigURatio>;
 
 fn search(db: &mut DB, board: &Board) -> BigURatio {
-    if let Some(dist) = db.get(board) {
-        return dist.mean();
+    if let Some(mean) = db.get(board) {
+        return mean.clone();
     }
     let mut dist = ProbDist::new();
     for (dices, n) in DICE_DATA.iter() {
-        let mut best = BigURatio::new_from_u32(4294967295, 1);
+        let mut best = BigURatio::new_from_u32(4_294_967_295, 1);
         for next in board.list_moves(dices) {
             let s = search(db, &next);
             if s < best {
@@ -22,64 +23,72 @@ fn search(db: &mut DB, board: &Board) -> BigURatio {
         }
         dist.append(best + BigURatio::one(), BigURatio::new_from_u32(*n, 36));
     }
-    db.insert(board.clone(), dist);
-    db.get(board).unwrap().mean()
+    let m = dist.mean();
+    db.insert(board.clone(), m.clone());
+    m
 }
 
-struct CellInc {
-    i: usize,
-    cell: [u8; 6],
-}
-
-impl CellInc {
-    fn new(i: usize, cell: [u8; 6]) -> CellInc {
-        CellInc { i, cell }
-    }
-}
-
-impl Iterator for CellInc {
-    type Item = [u8; 6];
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.i >= 6 {
-            None
-        } else {
-            let mut cell = self.cell.clone();
-            cell[self.i] += 1;
-            self.i += 1;
-            Some(cell)
+fn cell_loop(db: &mut DB, depth: usize, i: usize, cell: [u8; 6]) {
+    if depth == 0 {
+        search(db, &Board::new(cell));
+    } else {
+        for i in i..6 {
+            let mut cell = cell;
+            cell[i] += 1;
+            cell_loop(db, depth - 1, i, cell);
         }
     }
+}
+
+fn read_db(name: &str) -> std::io::Result<DB> {
+    let re = regex::Regex::new(r#"^\[(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\]$"#).unwrap();
+    let mut db = HashMap::new();
+    for line in std::io::BufReader::new(std::fs::File::open(name)?).lines() {
+        let line = line?;
+        println!("{}", line);
+        let mut words = line.split_ascii_whitespace();
+        let board = {
+            let m = re.captures(words.next().unwrap()).unwrap();
+            let mut cell = m
+                .iter()
+                .skip(1)
+                .map(|s| s.unwrap().as_str().parse().unwrap());
+            Board::new([
+                cell.next().unwrap(),
+                cell.next().unwrap(),
+                cell.next().unwrap(),
+                cell.next().unwrap(),
+                cell.next().unwrap(),
+                cell.next().unwrap(),
+            ])
+        };
+        let count = {
+            let mut s = words.next().unwrap().split('/');
+            BigURatio::new(
+                s.next().unwrap().parse().unwrap(),
+                s.next()
+                    .map(|s| s.parse().unwrap())
+                    .unwrap_or_else(One::one),
+            )
+        };
+        db.insert(board, count);
+    }
+    Ok(db)
 }
 
 fn main() {
-    let mut db = HashMap::new();
-    db.insert(Board::new([0; 6]), {
-        let mut dist = ProbDist::new();
-        dist.append(BigURatio::zero(), BigURatio::new_from_u32(1, 1));
-        dist
-    });
-    for (i, cell) in CellInc::new(0, [0; 6]).enumerate() {
-        search(&mut db, &Board::new(cell.clone()));
-        for cell in CellInc::new(i, cell) {
-            search(&mut db, &Board::new(cell.clone()));
-            for cell in CellInc::new(i, cell) {
-                search(&mut db, &Board::new(cell.clone()));
-                for cell in CellInc::new(i, cell) {
-                    search(&mut db, &Board::new(cell.clone()));
-                    for cell in CellInc::new(i, cell) {
-                        search(&mut db, &Board::new(cell.clone()));
-                        for cell in CellInc::new(i, cell) {
-                            search(&mut db, &Board::new(cell.clone()));
-                            for cell in CellInc::new(i, cell) {
-                                search(&mut db, &Board::new(cell.clone()));
-                            }
-                        }
-                    }
-                }
-            }
+    let mut args = args();
+    let depth = args.nth(1).unwrap().parse().unwrap();
+    let mut db = match args.next() {
+        None => {
+            let mut db = HashMap::new();
+            db.insert(Board::new([0; 6]), BigURatio::zero());
+            db
         }
-    }
-    for (board, dist) in db.iter() {
-        println!("{} {} {}", board, board.pips(), dist.mean());
+        Some(name) => read_db(&name).unwrap(),
+    };
+    cell_loop(&mut db, depth, 0, [0; 6]);
+    for (board, mean) in db.iter() {
+        println!("{} {}", board, mean);
     }
 }

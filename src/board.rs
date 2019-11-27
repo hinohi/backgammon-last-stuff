@@ -21,8 +21,12 @@ impl Board {
         Board { cell: c }
     }
 
-    pub fn pips(&self) -> u8 {
-        self.cell[1..].iter().sum()
+    pub fn pips(&self) -> u32 {
+        let mut p = 0;
+        for i in 1..7 {
+            p += self.cell[i] as u32 * i as u32
+        }
+        p
     }
 
     pub fn list_moves(&self, dices: &[usize]) -> HashSet<Board> {
